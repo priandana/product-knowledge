@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
     <title>Product Knowledge</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -15,13 +15,15 @@
         ::-webkit-scrollbar { width: 4px; background: transparent; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
         .dropdown-scroll::-webkit-scrollbar { width: 6px; }
+        /* Mencegah auto-zoom di HP (terutama iOS/iPhone) saat klik input */
+        input, select, textarea { font-size: 16px !important; }
     </style>
 </head>
-<body class="bg-gray-50 text-slate-900 pb-24">
+<body class="bg-gray-50 text-slate-900 pb-24 overscroll-none touch-pan-y">
 
     <!-- GANTI URL INI DENGAN URL WEB APP DARI GOOGLE APPS SCRIPT -->
     <script>
-        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxxf9-JAUcNnju1VJvOjiAOXH_ldWSPSxG5H7USqLUXgKRndtIvRnImHoMjqht2wllGZg/exec"; 
+        const SCRIPT_URL = ""; 
     </script>
 
     <!-- Header Ala GoPay -->
@@ -136,18 +138,18 @@
                 </div>
 
                 <!-- Searchable Dropdown Barang -->
-                <div class="space-y-1 relative" id="dropdownContainer">
-                    <label class="text-[10px] font-black text-slate-400 uppercase ml-2 tracking-widest">Ketik & Pilih Nama Barang</label>
-                    <div class="relative">
-                        <input 
-                            type="text" 
-                            id="searchableNameInput" 
-                            autocomplete="off"
-                            placeholder="Ketik nama produk..." 
-                            class="w-full bg-slate-50 border-none p-4 pr-10 rounded-2xl focus:ring-4 focus:ring-blue-100 transition-all font-bold uppercase italic"
-                        >
-                        <i data-lucide="chevron-down" class="w-5 h-5 absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
-                    </div>
+            <div class="space-y-1 relative" id="dropdownContainer">
+                <label class="text-[10px] font-black text-slate-400 uppercase ml-2 tracking-widest">Ketik & Pilih Nama Barang</label>
+                <div class="relative">
+                    <input 
+                        type="text" 
+                        id="searchableNameInput" 
+                        autocomplete="off"
+                        placeholder="Ketik nama produk..." 
+                        class="w-full bg-slate-50 border-none p-4 pr-10 rounded-2xl focus:ring-4 focus:ring-blue-100 transition-all font-bold uppercase italic text-base"
+                    >
+                    <i data-lucide="chevron-down" class="w-5 h-5 absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+                </div>
                     <!-- Pop-up List Options -->
                     <div id="dropdownList" class="hidden absolute z-50 w-full bg-white border border-gray-100 rounded-2xl mt-2 max-h-48 overflow-y-auto shadow-2xl dropdown-scroll">
                         <!-- List dari JS -->
@@ -161,17 +163,17 @@
                 </div>
 
                 <div class="grid grid-cols-2 gap-3">
-                    <div class="space-y-1">
-                        <label class="text-[10px] font-black text-slate-400 uppercase text-center block tracking-widest">Inner / Ctn</label>
-                        <input type="number" id="ctnInput" placeholder="1 Ctn = ? Inn" class="w-full bg-slate-50 border-none p-4 rounded-2xl text-center focus:ring-4 focus:ring-blue-100 font-bold text-sm">
-                    </div>
-                    <div class="space-y-1">
-                        <label class="text-[10px] font-black text-slate-400 uppercase text-center block tracking-widest">Pcs / Inner</label>
-                        <input type="number" id="innInput" placeholder="1 Inn = ? Pcs" class="w-full bg-slate-50 border-none p-4 rounded-2xl text-center focus:ring-4 focus:ring-blue-100 font-bold text-sm">
-                    </div>
+                <div class="space-y-1">
+                    <label class="text-[10px] font-black text-slate-400 uppercase text-center block tracking-widest">Inner / Ctn</label>
+                    <input type="number" id="ctnInput" placeholder="1 Ctn = ? Inn" class="w-full bg-slate-50 border-none p-4 rounded-2xl text-center focus:ring-4 focus:ring-blue-100 font-bold text-base">
                 </div>
+                <div class="space-y-1">
+                    <label class="text-[10px] font-black text-slate-400 uppercase text-center block tracking-widest">Pcs / Inner</label>
+                    <input type="number" id="innInput" placeholder="1 Inn = ? Pcs" class="w-full bg-slate-50 border-none p-4 rounded-2xl text-center focus:ring-4 focus:ring-blue-100 font-bold text-base">
+                </div>
+            </div>
 
-                <button type="submit" id="submitBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-5 rounded-[24px] shadow-xl shadow-blue-200 transition-all active:scale-95 flex items-center justify-center gap-3 mt-4 opacity-50 cursor-not-allowed" disabled>
+            <button type="submit" id="submitBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-5 rounded-[24px] shadow-xl shadow-blue-200 transition-all active:scale-95 flex items-center justify-center gap-3 mt-4 opacity-50 cursor-not-allowed" disabled>
                     <div id="btnIcon"><i data-lucide="package" class="w-5 h-5"></i></div>
                     <span id="btnText" class="tracking-widest italic">SIMPAN BARANG</span>
                 </button>
