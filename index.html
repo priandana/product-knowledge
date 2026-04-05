@@ -17,6 +17,10 @@
         .dropdown-scroll::-webkit-scrollbar { width: 6px; }
         /* Mencegah auto-zoom di HP (terutama iOS/iPhone) saat klik input */
         input, select, textarea { font-size: 16px !important; }
+        
+        /* Animasi loading gambar */
+        .img-loading { filter: blur(10px); }
+        .img-loaded { filter: blur(0); transition: filter 0.3s ease-in-out; }
     </style>
 </head>
 <body class="bg-gray-50 text-slate-900 pb-24 overscroll-none touch-pan-y">
@@ -101,10 +105,13 @@
 
     <!-- Modal Zoom Gambar -->
     <div id="zoomModal" class="hidden fixed inset-0 z-[200] bg-black/95 flex-col items-center justify-center p-4" onclick="closeZoom()">
-        <button class="absolute top-10 right-10 text-white hover:text-red-400 transition">
+        <button class="absolute top-10 right-10 text-white hover:text-red-400 transition z-50">
             <i data-lucide="x" class="w-10 h-10"></i>
         </button>
-        <img id="zoomImage" src="" alt="Zoom" class="max-w-full max-h-[80vh] rounded-2xl shadow-2xl transition-transform duration-300 scale-95" />
+        <div class="relative w-full max-w-lg flex items-center justify-center">
+            <div id="zoomLoading" class="absolute w-10 h-10 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
+            <img id="zoomImage" src="" alt="Zoom" class="max-w-full max-h-[80vh] rounded-2xl shadow-2xl transition-transform duration-300 scale-95 opacity-0" onload="this.classList.remove('opacity-0'); document.getElementById('zoomLoading').classList.add('hidden');" />
+        </div>
         <p class="text-white/60 text-sm mt-6 font-medium tracking-widest uppercase">Klik dimana saja untuk kembali</p>
     </div>
 
@@ -132,24 +139,24 @@
                         <img id="imagePreview" src="" class="hidden w-full h-full object-cover" alt="Preview" />
                         <input type="file" id="fileInput" accept="image/*" capture="environment" class="absolute inset-0 opacity-0 cursor-pointer" />
                     </div>
-                    <button type="button" id="removeImageBtn" onclick="removeImage()" class="hidden absolute -top-2 -right-2 bg-red-500 text-white p-1.5 rounded-full shadow-lg">
+                    <button type="button" id="removeImageBtn" onclick="removeImage()" class="hidden absolute -top-2 -right-2 bg-red-500 text-white p-1.5 rounded-full shadow-lg z-10">
                         <i data-lucide="x" class="w-4 h-4"></i>
                     </button>
                 </div>
 
                 <!-- Searchable Dropdown Barang -->
-            <div class="space-y-1 relative" id="dropdownContainer">
-                <label class="text-[10px] font-black text-slate-400 uppercase ml-2 tracking-widest">Ketik & Pilih Nama Barang</label>
-                <div class="relative">
-                    <input 
-                        type="text" 
-                        id="searchableNameInput" 
-                        autocomplete="off"
-                        placeholder="Ketik nama produk..." 
-                        class="w-full bg-slate-50 border-none p-4 pr-10 rounded-2xl focus:ring-4 focus:ring-blue-100 transition-all font-bold uppercase italic text-base"
-                    >
-                    <i data-lucide="chevron-down" class="w-5 h-5 absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
-                </div>
+                <div class="space-y-1 relative" id="dropdownContainer">
+                    <label class="text-[10px] font-black text-slate-400 uppercase ml-2 tracking-widest">Ketik & Pilih Nama Barang</label>
+                    <div class="relative">
+                        <input 
+                            type="text" 
+                            id="searchableNameInput" 
+                            autocomplete="off"
+                            placeholder="Ketik nama produk..." 
+                            class="w-full bg-slate-50 border-none p-4 pr-10 rounded-2xl focus:ring-4 focus:ring-blue-100 transition-all font-bold uppercase italic text-base"
+                        >
+                        <i data-lucide="chevron-down" class="w-5 h-5 absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+                    </div>
                     <!-- Pop-up List Options -->
                     <div id="dropdownList" class="hidden absolute z-50 w-full bg-white border border-gray-100 rounded-2xl mt-2 max-h-48 overflow-y-auto shadow-2xl dropdown-scroll">
                         <!-- List dari JS -->
@@ -159,21 +166,21 @@
                 <!-- Display PLU -->
                 <div class="space-y-1">
                     <label class="text-[10px] font-black text-slate-400 uppercase ml-2 tracking-widest">PLU (Otomatis)</label>
-                    <input id="pluInput" disabled placeholder="Pilih produk dulu..." class="w-full bg-blue-50 border-none p-3 rounded-2xl text-blue-600 font-bold placeholder-blue-300" />
+                    <input id="pluInput" disabled placeholder="Pilih produk dulu..." class="w-full bg-blue-50 border-none p-3 rounded-2xl text-blue-600 font-bold placeholder-blue-300 text-base" />
                 </div>
 
                 <div class="grid grid-cols-2 gap-3">
-                <div class="space-y-1">
-                    <label class="text-[10px] font-black text-slate-400 uppercase text-center block tracking-widest">Inner / Ctn</label>
-                    <input type="number" id="ctnInput" placeholder="1 Ctn = ? Inn" class="w-full bg-slate-50 border-none p-4 rounded-2xl text-center focus:ring-4 focus:ring-blue-100 font-bold text-base">
+                    <div class="space-y-1">
+                        <label class="text-[10px] font-black text-slate-400 uppercase text-center block tracking-widest">Inner / Ctn</label>
+                        <input type="number" id="ctnInput" placeholder="1 Ctn = ? Inn" class="w-full bg-slate-50 border-none p-4 rounded-2xl text-center focus:ring-4 focus:ring-blue-100 font-bold text-base">
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-[10px] font-black text-slate-400 uppercase text-center block tracking-widest">Pcs / Inner</label>
+                        <input type="number" id="innInput" placeholder="1 Inn = ? Pcs" class="w-full bg-slate-50 border-none p-4 rounded-2xl text-center focus:ring-4 focus:ring-blue-100 font-bold text-base">
+                    </div>
                 </div>
-                <div class="space-y-1">
-                    <label class="text-[10px] font-black text-slate-400 uppercase text-center block tracking-widest">Pcs / Inner</label>
-                    <input type="number" id="innInput" placeholder="1 Inn = ? Pcs" class="w-full bg-slate-50 border-none p-4 rounded-2xl text-center focus:ring-4 focus:ring-blue-100 font-bold text-base">
-                </div>
-            </div>
 
-            <button type="submit" id="submitBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-5 rounded-[24px] shadow-xl shadow-blue-200 transition-all active:scale-95 flex items-center justify-center gap-3 mt-4 opacity-50 cursor-not-allowed" disabled>
+                <button type="submit" id="submitBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-5 rounded-[24px] shadow-xl shadow-blue-200 transition-all active:scale-95 flex items-center justify-center gap-3 mt-4 opacity-50 cursor-not-allowed" disabled>
                     <div id="btnIcon"><i data-lucide="package" class="w-5 h-5"></i></div>
                     <span id="btnText" class="tracking-widest italic">SIMPAN BARANG</span>
                 </button>
@@ -189,13 +196,30 @@
         let productsData = [];
         let masterSKUData = [];
         let base64Image = "";
-        let selectedProductData = null; // Menyimpan data produk yg dipilih
+        let selectedProductData = null;
 
         // Elements
         const loadingSpinner = document.getElementById('loadingSpinner');
         const emptyState = document.getElementById('emptyState');
         const productGrid = document.getElementById('productGrid');
         const searchInput = document.getElementById('searchInput');
+
+        // Fungsi ajaib untuk memperbaiki link Google Drive
+        function fixGoogleDriveLink(url) {
+            if (!url) return "";
+            // Jika itu Base64 (sedang proses), biarkan
+            if (url.startsWith('data:image')) return url;
+            
+            // Jika itu link G-Drive format lama (uc?id=...)
+            if (url.includes("drive.google.com")) {
+                const match = url.match(/id=([^&]+)/) || url.match(/\/d\/([a-zA-Z0-9-_]+)/);
+                if (match && match[1]) {
+                    // Paksa pakai format thumbnail yang diizinkan Google
+                    return `https://drive.google.com/thumbnail?id=${match[1]}&sz=w1000`;
+                }
+            }
+            return url; // Kembalikan link apa adanya jika bukan G-Drive
+        }
 
         // Fetch Data from Google Sheets
         async function loadData() {
@@ -230,11 +254,35 @@
             }
             
             emptyState.classList.add('hidden');
-            productGrid.innerHTML = dataToRender.map(p => `
+            productGrid.innerHTML = dataToRender.map(p => {
+                // Perbaiki Link Gambar sebelum di-render
+                const safeImgSrc = fixGoogleDriveLink(p.foto);
+                
+                let imageHTML = '';
+                if (safeImgSrc) {
+                    imageHTML = `
+                        <img src="${safeImgSrc}" alt="${p.nama}" 
+                             onload="this.classList.remove('img-loading'); this.classList.add('img-loaded');"
+                             onerror="this.style.display='none'; this.nextElementSibling.classList.remove('hidden');" 
+                             class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 img-loading" />
+                        <div class="hidden w-full h-full flex flex-col items-center justify-center text-gray-400 bg-gray-100">
+                            <i data-lucide="image-off" class="w-8 h-8 mb-1 opacity-50"></i>
+                            <span class="text-[8px] font-bold opacity-50">ERROR LINK</span>
+                        </div>
+                    `;
+                } else {
+                    imageHTML = `
+                        <div class="w-full h-full flex flex-col items-center justify-center text-gray-300 bg-gray-50">
+                            <i data-lucide="camera-off" class="w-8 h-8 mb-1 opacity-50"></i>
+                            <span class="text-[8px] font-bold opacity-50">TIDAK ADA FOTO</span>
+                        </div>
+                    `;
+                }
+
+                return `
                 <div class="bg-white rounded-[32px] overflow-hidden shadow-sm border border-gray-100 hover:shadow-lg transition-all group active:scale-95 duration-200 flex flex-col">
-                    <div class="relative h-40 bg-gray-50 cursor-zoom-in flex-shrink-0" onclick="openZoom('${p.foto || ''}')">
-                        ${p.foto ? `<img src="${p.foto}" alt="${p.nama}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />` 
-                                : `<div class="w-full h-full flex items-center justify-center text-gray-200"><i data-lucide="image" class="w-8 h-8"></i></div>`}
+                    <div class="relative h-40 bg-gray-50 cursor-zoom-in flex-shrink-0" onclick="openZoom('${safeImgSrc}')">
+                        ${imageHTML}
                         <div class="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
                             <i data-lucide="zoom-in" class="text-white opacity-0 group-hover:opacity-100 transition-opacity w-6 h-6"></i>
                         </div>
@@ -257,7 +305,7 @@
                         </div>
                     </div>
                 </div>
-            `).join('');
+            `}).join('');
             lucide.createIcons();
         }
 
@@ -290,26 +338,22 @@
             }).join('');
         }
 
-        // Tampilkan list saat diklik
         searchableNameInput.addEventListener('focus', () => {
             dropdownList.classList.remove('hidden');
             renderDropdownList(masterSKUData);
         });
 
-        // Filter list saat diketik
         searchableNameInput.addEventListener('input', (e) => {
             const val = e.target.value.toLowerCase();
             const filtered = masterSKUData.filter(sku => sku.nama.toLowerCase().includes(val));
             renderDropdownList(filtered);
             dropdownList.classList.remove('hidden');
 
-            // Reset PLU jika ngetik ulang manual
             selectedProductData = null;
             pluInput.value = '';
             checkSubmitButton();
         });
 
-        // Fungsi saat list barang di-klik
         window.selectProduct = function(nama) {
             searchableNameInput.value = nama;
             dropdownList.classList.add('hidden');
@@ -319,7 +363,6 @@
             checkSubmitButton();
         };
 
-        // Sembunyikan list kalau ngeklik di luar area dropdown
         document.addEventListener('click', (e) => {
             if (!dropdownContainer.contains(e.target)) {
                 dropdownList.classList.add('hidden');
@@ -386,13 +429,12 @@
             btnText.innerText = "MENYIMPAN...";
             btnIcon.innerHTML = `<div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>`;
 
-            // Data yang dikirim ke Google Sheets (Backend Apps Script)
             const payload = {
-                nama: selectedProductData.nama, // Kirim nama yang valid dari master
+                nama: selectedProductData.nama,
                 foto: base64Image,
-                ctn: document.getElementById('ctnInput').value || '0', // Nilai Inner / Ctn
-                inn: document.getElementById('innInput').value || '0', // Nilai Pcs / Inner
-                pcs: '1' // Default satuan terkecil
+                ctn: document.getElementById('ctnInput').value || '0',
+                inn: document.getElementById('innInput').value || '0',
+                pcs: '1'
             };
 
             try {
@@ -439,9 +481,23 @@
         }
 
         function openZoom(imgSrc) {
-            if(!imgSrc) return;
+            if(!imgSrc || imgSrc === "") return;
+            
             const modal = document.getElementById('zoomModal');
             const img = document.getElementById('zoomImage');
+            const loading = document.getElementById('zoomLoading');
+            
+            // Reset state
+            img.src = "";
+            img.classList.add('opacity-0');
+            loading.classList.remove('hidden');
+            
+            img.onerror = function() {
+                this.src = 'https://via.placeholder.com/800x800/f8fafc/94a3b8?text=Google+Drive+Memblokir+Gambar';
+                this.classList.remove('opacity-0');
+                loading.classList.add('hidden');
+            };
+
             img.src = imgSrc;
             modal.classList.remove('hidden');
             modal.classList.add('flex');
