@@ -137,9 +137,13 @@
                             <p class="text-[10px] font-bold text-gray-400 uppercase">Ambil Foto / Pilih File</p>
                         </div>
                         <img id="imagePreview" src="" class="hidden w-full h-full object-cover" alt="Preview" />
+                        <div id="imageLoading" class="hidden absolute inset-0 bg-white/80 flex flex-col items-center justify-center z-10">
+                            <div class="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mb-2"></div>
+                            <span class="text-[8px] font-bold text-blue-600 tracking-widest">MEMPROSES GAMBAR...</span>
+                        </div>
                         <input type="file" id="fileInput" accept="image/*" capture="environment" class="absolute inset-0 opacity-0 cursor-pointer" />
                     </div>
-                    <button type="button" id="removeImageBtn" onclick="removeImage()" class="hidden absolute -top-2 -right-2 bg-red-500 text-white p-1.5 rounded-full shadow-lg z-10">
+                    <button type="button" id="removeImageBtn" onclick="removeImage()" class="hidden absolute -top-2 -right-2 bg-red-500 text-white p-1.5 rounded-full shadow-lg z-20">
                         <i data-lucide="x" class="w-4 h-4"></i>
                     </button>
                 </div>
@@ -207,18 +211,16 @@
         // Fungsi ajaib untuk memperbaiki link Google Drive
         function fixGoogleDriveLink(url) {
             if (!url) return "";
-            // Jika itu Base64 (sedang proses), biarkan
             if (url.startsWith('data:image')) return url;
             
-            // Jika itu link G-Drive format lama (uc?id=...)
+            // Mengubah format G-Drive agar tidak error
             if (url.includes("drive.google.com")) {
                 const match = url.match(/id=([^&]+)/) || url.match(/\/d\/([a-zA-Z0-9-_]+)/);
                 if (match && match[1]) {
-                    // Paksa pakai format thumbnail yang diizinkan Google
                     return `https://drive.google.com/thumbnail?id=${match[1]}&sz=w1000`;
                 }
             }
-            return url; // Kembalikan link apa adanya jika bukan G-Drive
+            return url;
         }
 
         // Fetch Data from Google Sheets
@@ -255,7 +257,6 @@
             
             emptyState.classList.add('hidden');
             productGrid.innerHTML = dataToRender.map(p => {
-                // Perbaiki Link Gambar sebelum di-render
                 const safeImgSrc = fixGoogleDriveLink(p.foto);
                 
                 let imageHTML = '';
@@ -371,23 +372,57 @@
         // ----------------------------------------------------
 
 
-        // Image Upload Logic
+        // LOGIKA KOMPRESI GAMBAR (PENTING AGAR GOOGLE SCRIPT TIDAK ERROR)
         const fileInput = document.getElementById('fileInput');
         const imagePreview = document.getElementById('imagePreview');
         const uploadPlaceholder = document.getElementById('uploadPlaceholder');
         const removeImageBtn = document.getElementById('removeImageBtn');
+        const imageLoading = document.getElementById('imageLoading');
 
         fileInput.addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (file) {
+                imageLoading.classList.remove('hidden'); // Munculkan text loading
                 const reader = new FileReader();
                 reader.onloadend = () => {
-                    base64Image = reader.result;
-                    imagePreview.src = base64Image;
-                    imagePreview.classList.remove('hidden');
-                    uploadPlaceholder.classList.add('hidden');
-                    removeImageBtn.classList.remove('hidden');
-                    checkSubmitButton();
+                    // Buat elemen gambar virtual untuk di-resize
+                    const img = new Image();
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        const MAX_WIDTH = 800; // Batas maksimal resolusi gambar (800 pixel)
+                        const MAX_HEIGHT = 800;
+                        let width = img.width;
+                        let height = img.height;
+
+                        if (width > height) {
+                            if (width > MAX_WIDTH) {
+                                height *= MAX_WIDTH / width;
+                                width = MAX_WIDTH;
+                            }
+                        } else {
+                            if (height > MAX_HEIGHT) {
+                                width *= MAX_HEIGHT / height;
+                                height = MAX_HEIGHT;
+                            }
+                        }
+                        
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+
+                        // Kompres jadi format JPEG dengan kualitas 70%
+                        base64Image = canvas.toDataURL('image/jpeg', 0.7);
+                        
+                        imagePreview.src = base64Image;
+                        imagePreview.classList.remove('hidden');
+                        uploadPlaceholder.classList.add('hidden');
+                        removeImageBtn.classList.remove('hidden');
+                        imageLoading.classList.add('hidden'); // Matikan text loading
+                        
+                        checkSubmitButton();
+                    };
+                    img.src = reader.result;
                 };
                 reader.readAsDataURL(file);
             }
@@ -447,7 +482,8 @@
                 pluInput.value = '';
                 removeImage();
                 
-                loadData();
+                // Hapus data "kosong" dari inputan sebelumnya dengan merefresh tabel
+                loadData(); 
             } catch (error) {
                 alert("Terjadi kesalahan saat menyimpan data.");
             } finally {
@@ -487,7 +523,6 @@
             const img = document.getElementById('zoomImage');
             const loading = document.getElementById('zoomLoading');
             
-            // Reset state
             img.src = "";
             img.classList.add('opacity-0');
             loading.classList.remove('hidden');
