@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product Knowledge</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800;900&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        /* Menyembunyikan scrollbar untuk tampilan lebih bersih */
+        ::-webkit-scrollbar { width: 0px; background: transparent; }
+    </style>
+</head>
+<body class="bg-gray-50 text-slate-900 pb-24">
+
+    <!-- GANTI URL INI DENGAN URL WEB APP DARI GOOGLE APPS SCRIPT -->
+    <script>
+        const SCRIPT_URL = ""; 
+    </script>
+
+    <!-- Header Ala GoPay -->
+    <div class="bg-blue-600 pb-24 pt-10 px-6 rounded-b-[45px] shadow-lg">
+        <div class="flex justify-between items-center mb-6">
+            <div>
+                <h1 class="text-white text-2xl font-bold tracking-tight uppercase">Product<span class="text-cyan-300">Knowledge</span></h1>
+                <p class="text-blue-100 text-[10px] tracking-widest font-semibold opacity-80">STATIONARY & RETAIL GUIDE</p>
+            </div>
+            <div class="bg-white/20 p-2 rounded-2xl text-white backdrop-blur-md">
+                <i data-lucide="info" class="w-5 h-5"></i>
+            </div>
+        </div>
+
+        <!-- Search Bar -->
+        <div class="relative group">
+            <div class="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+                <i data-lucide="search" class="w-[18px] h-[18px] text-gray-400 group-focus-within:text-blue-600 transition-colors"></i>
+            </div>
+            <input 
+                type="text" 
+                id="searchInput"
+                placeholder="Cari PLU atau Nama Barang..."
+                class="w-full bg-white py-4 pl-12 pr-4 rounded-2xl shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-300/30 transition-all border-none"
+            >
+        </div>
+    </div>
+
+    <!-- Dashboard Area -->
+    <div class="px-6 -mt-12">
+        <div class="bg-white rounded-[32px] shadow-xl p-5 flex justify-between items-center border border-gray-100">
+            <div class="flex flex-col items-center flex-1 border-r border-gray-100">
+                <div class="bg-blue-50 p-3 rounded-2xl mb-1.5 text-blue-600">
+                    <i data-lucide="package" class="w-[22px] h-[22px]"></i>
+                </div>
+                <span class="text-[9px] font-bold text-gray-400 uppercase tracking-tighter">Master SKU</span>
+                <span id="masterCount" class="font-extrabold text-lg text-slate-800">0</span>
+            </div>
+            <div class="flex flex-col items-center flex-1 border-r border-gray-100">
+                <div class="bg-emerald-50 p-3 rounded-2xl mb-1.5 text-emerald-600">
+                    <i data-lucide="layout-grid" class="w-[22px] h-[22px]"></i>
+                </div>
+                <span class="text-[9px] font-bold text-gray-400 uppercase tracking-tighter">Etalase</span>
+                <span id="etalaseCount" class="font-extrabold text-lg text-slate-800">0</span>
+            </div>
+            <div class="flex flex-col items-center flex-1">
+                <button 
+                    onclick="openModal()"
+                    class="bg-orange-50 p-3 rounded-2xl mb-1.5 text-orange-600 hover:bg-orange-100 active:scale-90 transition transform"
+                >
+                    <i data-lucide="plus" class="w-[22px] h-[22px]"></i>
+                </button>
+                <span class="text-[9px] font-bold text-gray-400 uppercase tracking-tighter">Input</span>
+                <span class="font-extrabold text-lg text-orange-600">Baru</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Product Etalase Grid -->
+    <div class="px-6 mt-10">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-lg font-black text-slate-800 tracking-tight">Katalog Produk</h2>
+            <div id="loadingSpinner" class="hidden w-5 h-5 border-3 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+        </div>
+        
+        <div id="emptyState" class="hidden text-center py-20 bg-white rounded-[40px] border-2 border-dashed border-gray-200">
+            <i data-lucide="box" class="w-12 h-12 mx-auto mb-3 text-gray-200"></i>
+            <p class="text-gray-400 text-sm font-medium">Belum ada barang di etalase...</p>
+        </div>
+
+        <div id="productGrid" class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
+            <!-- Produk akan di-render di sini oleh JavaScript -->
+        </div>
+    </div>
+
+    <!-- Modal Zoom Gambar -->
+    <div id="zoomModal" class="hidden fixed inset-0 z-[200] bg-black/95 flex-col items-center justify-center p-4" onclick="closeZoom()">
+        <button class="absolute top-10 right-10 text-white hover:text-red-400 transition">
+            <i data-lucide="x" class="w-10 h-10"></i>
+        </button>
+        <img id="zoomImage" src="" alt="Zoom" class="max-w-full max-h-[80vh] rounded-2xl shadow-2xl transition-transform duration-300 scale-95" />
+        <p class="text-white/60 text-sm mt-6 font-medium tracking-widest uppercase">Klik dimana saja untuk kembali</p>
+    </div>
+
+    <!-- Modal Form Tambah Barang -->
+    <div id="inputModal" class="hidden fixed inset-0 z-[100] flex items-end justify-center sm:items-center bg-black/60 backdrop-blur-md p-0 sm:p-4 transition-opacity">
+        <div class="bg-white w-full max-w-md rounded-t-[45px] sm:rounded-[45px] p-8 shadow-2xl overflow-y-auto max-h-[90vh] transform transition-transform translate-y-full" id="modalContent">
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <h2 class="text-xl font-black text-slate-800 uppercase tracking-tighter italic">Input Produk</h2>
+                    <div class="h-1 w-12 bg-blue-600 rounded-full mt-1"></div>
+                </div>
+                <button onclick="closeModal()" class="bg-gray-100 p-2 rounded-full text-gray-400 hover:text-red-500 transition">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+            
+            <form id="productForm" class="space-y-5">
+                <!-- Image Input Section -->
+                <div class="relative group">
+                    <div class="w-full h-40 bg-gray-50 rounded-[32px] border-2 border-dashed border-gray-200 flex flex-col items-center justify-center overflow-hidden relative group-hover:border-blue-300 transition-colors">
+                        
+                        <div id="uploadPlaceholder" class="flex flex-col items-center text-gray-300">
+                            <i data-lucide="camera" class="w-9 h-9 mb-2"></i>
+                            <p class="text-[10px] font-bold text-gray-400 uppercase">Ambil Foto / Pilih File</p>
+                        </div>
+                        <img id="imagePreview" src="" class="hidden w-full h-full object-cover" alt="Preview" />
+                        
+                        <input 
+                            type="file" 
+                            id="fileInput"
+                            accept="image/*" 
+                            capture="environment" 
+                            class="absolute inset-0 opacity-0 cursor-pointer"
+                        />
+                    </div>
+                    <button 
+                        type="button"
+                        id="removeImageBtn"
+                        onclick="removeImage()"
+                        class="hidden absolute -top-2 -right-2 bg-red-500 text-white p-1.5 rounded-full shadow-lg"
+                    >
+                        <i data-lucide="x" class="w-4 h-4"></i>
+                    </button>
+                </div>
+
+                <!-- Dropdown Barang -->
+                <div class="space-y-1 relative">
+                    <label class="text-[10px] font-black text-slate-400 uppercase ml-2 tracking-widest">Nama Barang</label>
+                    <div class="relative">
+                        <select 
+                            id="namaSelect"
+                            required 
+                            class="w-full bg-slate-50 border-none p-4 pr-10 rounded-2xl focus:ring-4 focus:ring-blue-100 transition-all font-bold uppercase italic appearance-none"
+                        >
+                            <option value="" disabled selected>-- Pilih Produk dari Master --</option>
+                            <!-- Options akan diisi lewat JS -->
+                        </select>
+                        <i data-lucide="chevron-down" class="w-5 h-5 absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+                    </div>
+                </div>
+
+                <!-- Display PLU -->
+                <div class="space-y-1">
+                    <label class="text-[10px] font-black text-slate-400 uppercase ml-2 tracking-widest">PLU (Otomatis)</label>
+                    <input 
+                        id="pluInput"
+                        disabled 
+                        placeholder="Terisi Otomatis" 
+                        class="w-full bg-blue-50 border-none p-3 rounded-2xl text-blue-600 font-bold placeholder-blue-300"
+                    />
+                </div>
+
+                <div class="grid grid-cols-3 gap-3">
+                    <div class="space-y-1">
+                        <label class="text-[10px] font-black text-slate-400 uppercase text-center block tracking-widest">Isi Ctn</label>
+                        <input type="number" id="ctnInput" placeholder="0" class="w-full bg-slate-50 border-none p-4 rounded-2xl text-center focus:ring-4 focus:ring-blue-100 font-bold">
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-[10px] font-black text-slate-400 uppercase text-center block tracking-widest">Isi Inn</label>
+                        <input type="number" id="innInput" placeholder="0" class="w-full bg-slate-50 border-none p-4 rounded-2xl text-center focus:ring-4 focus:ring-blue-100 font-bold">
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-[10px] font-black text-slate-400 uppercase text-center block tracking-widest">Pcs</label>
+                        <input type="number" id="pcsInput" placeholder="1" value="1" class="w-full bg-slate-50 border-none p-4 rounded-2xl text-center focus:ring-4 focus:ring-blue-100 font-bold">
+                    </div>
+                </div>
+
+                <button 
+                    type="submit" 
+                    id="submitBtn"
+                    class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-5 rounded-[24px] shadow-xl shadow-blue-200 transition-all active:scale-95 flex items-center justify-center gap-3 mt-4"
+                >
+                    <div id="btnIcon"><i data-lucide="package" class="w-5 h-5"></i></div>
+                    <span id="btnText" class="tracking-widest italic">SIMPAN BARANG</span>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Inisiasi Ikon Lucide
+        lucide.createIcons();
+
+        // State variables
+        let productsData = [];
+        let masterSKUData = [];
+        let base64Image = "";
+
+        // Elements
+        const loadingSpinner = document.getElementById('loadingSpinner');
+        const emptyState = document.getElementById('emptyState');
+        const productGrid = document.getElementById('productGrid');
+        const searchInput = document.getElementById('searchInput');
+
+        // Fetch Data from Google Sheets
+        async function loadData() {
+            if (!SCRIPT_URL) {
+                console.warn("SCRIPT_URL belum diisi!");
+                return;
+            }
+            loadingSpinner.classList.remove('hidden');
+            try {
+                const response = await fetch(SCRIPT_URL);
+                const data = await response.json();
+                productsData = data.products || [];
+                masterSKUData = data.masterSKU || [];
+                
+                document.getElementById('masterCount').innerText = masterSKUData.length;
+                
+                renderDropdown();
+                renderGrid(productsData);
+            } catch (error) {
+                console.error("Gagal load data:", error);
+            } finally {
+                loadingSpinner.classList.remove('hidden');
+                loadingSpinner.classList.add('hidden');
+            }
+        }
+
+        // Render Etalase Grid
+        function renderGrid(dataToRender) {
+            document.getElementById('etalaseCount').innerText = dataToRender.length;
+            
+            if (dataToRender.length === 0) {
+                emptyState.classList.remove('hidden');
+                productGrid.innerHTML = "";
+                return;
+            }
+            
+            emptyState.classList.add('hidden');
+            productGrid.innerHTML = dataToRender.map(p => `
+                <div class="bg-white rounded-[32px] overflow-hidden shadow-sm border border-gray-100 hover:shadow-lg transition-all group active:scale-95 duration-200">
+                    <div class="relative h-40 bg-gray-50 cursor-zoom-in" onclick="openZoom('${p.foto || ''}')">
+                        ${p.foto ? `<img src="${p.foto}" alt="${p.nama}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />` 
+                                : `<div class="w-full h-full flex items-center justify-center text-gray-200"><i data-lucide="image" class="w-8 h-8"></i></div>`}
+                        <div class="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+                            <i data-lucide="zoom-in" class="text-white opacity-0 group-hover:opacity-100 transition-opacity w-6 h-6"></i>
+                        </div>
+                        <div class="absolute top-3 left-3 bg-white/90 backdrop-blur-md px-2 py-1 rounded-lg">
+                            <span class="text-[8px] font-black text-blue-700 tracking-tighter">PLU ${p.plu || '-'}</span>
+                        </div>
+                    </div>
+                    <div class="p-3">
+                        <h3 class="font-extrabold text-slate-800 text-[11px] leading-tight mb-3 h-8 overflow-hidden line-clamp-2 uppercase italic">${p.nama}</h3>
+                        <div class="flex justify-between items-center bg-slate-50 rounded-2xl px-2 py-2">
+                            <div class="text-center flex-1">
+                                <p class="text-[7px] text-gray-400 font-bold uppercase">Ctn</p>
+                                <p class="text-[10px] font-black text-blue-600">${p.ctn || '-'}</p>
+                            </div>
+                            <div class="w-[1px] h-4 bg-gray-200"></div>
+                            <div class="text-center flex-1">
+                                <p class="text-[7px] text-gray-400 font-bold uppercase">Inn</p>
+                                <p class="text-[10px] font-black text-emerald-500">${p.inn || '-'}</p>
+                            </div>
+                            <div class="w-[1px] h-4 bg-gray-200"></div>
+                            <div class="text-center flex-1">
+                                <p class="text-[7px] text-gray-400 font-bold uppercase">Pcs</p>
+                                <p class="text-[10px] font-black text-rose-500">${p.pcs || '1'}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            
+            // Re-init icons for newly added HTML
+            lucide.createIcons();
+        }
+
+        // Search Function
+        searchInput.addEventListener('input', (e) => {
+            const val = e.target.value.toLowerCase();
+            const filtered = productsData.filter(p => 
+                (p.nama && p.nama.toLowerCase().includes(val)) || 
+                (p.plu && p.plu.toString().includes(val))
+            );
+            renderGrid(filtered);
+        });
+
+        // Render Master SKU Dropdown
+        function renderDropdown() {
+            const select = document.getElementById('namaSelect');
+            // Keep the first disabled option
+            select.innerHTML = '<option value="" disabled selected>-- Pilih Produk dari Master --</option>' + 
+                masterSKUData.map(sku => `<option value="${sku.nama}">${sku.nama}</option>`).join('');
+        }
+
+        // On Dropdown Change (Auto fill PLU)
+        document.getElementById('namaSelect').addEventListener('change', (e) => {
+            const selectedName = e.target.value;
+            const item = masterSKUData.find(m => m.nama === selectedName);
+            document.getElementById('pluInput').value = item ? item.plu : '';
+            checkSubmitButton();
+        });
+
+        // Image Upload Logic
+        const fileInput = document.getElementById('fileInput');
+        const imagePreview = document.getElementById('imagePreview');
+        const uploadPlaceholder = document.getElementById('uploadPlaceholder');
+        const removeImageBtn = document.getElementById('removeImageBtn');
+
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    base64Image = reader.result;
+                    imagePreview.src = base64Image;
+                    imagePreview.classList.remove('hidden');
+                    uploadPlaceholder.classList.add('hidden');
+                    removeImageBtn.classList.remove('hidden');
+                    checkSubmitButton();
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        function removeImage() {
+            base64Image = "";
+            fileInput.value = "";
+            imagePreview.src = "";
+            imagePreview.classList.add('hidden');
+            uploadPlaceholder.classList.remove('hidden');
+            removeImageBtn.classList.add('hidden');
+            checkSubmitButton();
+        }
+
+        // Submit Form
+        document.getElementById('productForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!SCRIPT_URL) {
+                alert("URL Script Google belum dimasukkan!"); return;
+            }
+
+            const btnText = document.getElementById('btnText');
+            const btnIcon = document.getElementById('btnIcon');
+            const submitBtn = document.getElementById('submitBtn');
+
+            // Set Loading UI
+            submitBtn.disabled = true;
+            submitBtn.classList.add('bg-slate-400');
+            submitBtn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+            btnText.innerText = "MENYIMPAN...";
+            btnIcon.innerHTML = `<div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>`;
+
+            const payload = {
+                nama: document.getElementById('namaSelect').value,
+                foto: base64Image,
+                ctn: document.getElementById('ctnInput').value,
+                inn: document.getElementById('innInput').value,
+                pcs: document.getElementById('pcsInput').value
+            };
+
+            try {
+                await fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    body: JSON.stringify(payload)
+                });
+                
+                // Success - Reset Form
+                closeModal();
+                document.getElementById('productForm').reset();
+                removeImage();
+                document.getElementById('pluInput').value = '';
+                
+                // Refresh Data
+                loadData();
+            } catch (error) {
+                alert("Terjadi kesalahan saat menyimpan data.");
+            } finally {
+                // Reset Button UI
+                submitBtn.disabled = false;
+                submitBtn.classList.remove('bg-slate-400');
+                submitBtn.classList.add('bg-blue-600', 'hover:bg-blue-700');
+                btnText.innerText = "SIMPAN BARANG";
+                btnIcon.innerHTML = `<i data-lucide="package" class="w-5 h-5"></i>`;
+                lucide.createIcons();
+            }
+        });
+
+        function checkSubmitButton() {
+            const isNameSelected = document.getElementById('namaSelect').value !== "";
+            const hasImage = base64Image !== "";
+            const submitBtn = document.getElementById('submitBtn');
+            
+            if (isNameSelected && hasImage) {
+                submitBtn.disabled = false;
+                submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            } else {
+                submitBtn.disabled = true;
+                submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            }
+        }
+
+        // Modal Controls
+        function openModal() {
+            const modal = document.getElementById('inputModal');
+            const content = document.getElementById('modalContent');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            // Small delay for animation
+            setTimeout(() => {
+                content.classList.remove('translate-y-full');
+            }, 10);
+            checkSubmitButton();
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('inputModal');
+            const content = document.getElementById('modalContent');
+            content.classList.add('translate-y-full');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }, 300);
+        }
+
+        function openZoom(imgSrc) {
+            if(!imgSrc) return;
+            const modal = document.getElementById('zoomModal');
+            const img = document.getElementById('zoomImage');
+            img.src = imgSrc;
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            setTimeout(() => img.classList.remove('scale-95'), 10);
+        }
+
+        function closeZoom() {
+            const modal = document.getElementById('zoomModal');
+            const img = document.getElementById('zoomImage');
+            img.classList.add('scale-95');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+                img.src = "";
+            }, 300);
+        }
+
+        // Initialize App
+        loadData();
+
+    </script>
+</body>
+</html>
