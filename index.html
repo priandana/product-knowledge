@@ -16,6 +16,8 @@
         input, select, button { font-size: 16px !important; }
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
         .glass-header { background: linear-gradient(135deg, #1E3A8A 0%, #2563EB 100%); }
         .quiz-overlay { backdrop-filter: blur(8px); }
         .loader { border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
@@ -32,6 +34,9 @@
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
             position: relative;
         }
+        
+        /* Untuk Bottom Sheet Form */
+        .pb-safe { padding-bottom: env(safe-area-inset-bottom, 20px); }
     </style>
 </head>
 <body class="text-slate-800 flex justify-center">
@@ -85,7 +90,7 @@
                     <p class="text-[10px] text-gray-400 uppercase font-bold break-words">Total Item</p>
                     <p class="text-lg font-black text-slate-700 leading-tight mt-1" id="totalItemCount">0</p>
                 </div>
-                <div class="text-center flex-1 cursor-pointer hidden flex-col justify-center px-2" id="btnAddSection" onclick="toggleForm()">
+                <div class="text-center flex-1 cursor-pointer hidden flex-col justify-center px-2 hover:bg-orange-50 rounded-xl transition" id="btnAddSection" onclick="openForm()">
                     <i data-lucide="plus-circle" class="w-6 h-6 mx-auto text-orange-500 mb-1"></i>
                     <p class="text-[10px] text-gray-400 uppercase font-bold break-words">Input</p>
                     <p class="text-lg font-black text-orange-600 leading-tight mt-1">Baru</p>
@@ -100,51 +105,6 @@
             <!-- Indicator Loading/Offline -->
             <div id="statusIndicator" class="text-center mb-4 text-xs font-bold text-blue-600 bg-blue-50 py-2 rounded-lg animate-pulse">
                 Menghubungkan ke server...
-            </div>
-
-            <!-- Form Tambah (Tersembunyi) -->
-            <div id="inputForm" class="hidden bg-white p-5 rounded-[2rem] shadow-2xl border border-blue-100 mb-8 transform transition-all">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-lg font-black text-blue-800 italic uppercase">Input Produk Baru</h2>
-                    <button onclick="toggleForm()" class="bg-gray-100 p-2 rounded-full text-gray-400 hover:text-red-500"><i data-lucide="x" class="w-4 h-4"></i></button>
-                </div>
-                
-                <div class="space-y-4">
-                    <!-- Dropdown Nama Pintar (Datalist) -->
-                    <div>
-                        <label class="block text-[10px] font-black text-gray-400 mb-1 tracking-widest uppercase">Nama Barang dari Master</label>
-                        <input type="text" id="inputNama" list="namaList" placeholder="Ketik atau pilih nama..." 
-                               class="w-full bg-slate-50 border-none rounded-xl p-4 focus:ring-4 focus:ring-blue-100 font-bold uppercase italic text-sm text-slate-700">
-                        <datalist id="namaList"></datalist>
-                    </div>
-
-                    <div class="flex gap-3">
-                        <div class="w-1/2">
-                            <label class="block text-[10px] font-black text-gray-400 mb-1 tracking-widest uppercase text-center">1 CTN = ? INN</label>
-                            <input type="number" id="inputCtn" placeholder="0" class="w-full bg-slate-50 border-none rounded-xl p-4 focus:ring-4 focus:ring-blue-100 text-center font-black text-lg text-blue-600">
-                        </div>
-                        <div class="w-1/2">
-                            <label class="block text-[10px] font-black text-gray-400 mb-1 tracking-widest uppercase text-center">1 INN = ? PCS</label>
-                            <input type="number" id="inputInn" placeholder="0" class="w-full bg-slate-50 border-none rounded-xl p-4 focus:ring-4 focus:ring-blue-100 text-center font-black text-lg text-emerald-600">
-                        </div>
-                    </div>
-
-                    <div>
-                        <label class="block text-[10px] font-black text-gray-400 mb-1 tracking-widest uppercase">Foto Aktual Produk</label>
-                        <div class="relative w-full h-36 border-2 border-dashed border-slate-200 rounded-2xl bg-slate-50 flex flex-col items-center justify-center cursor-pointer overflow-hidden group hover:border-blue-300" onclick="document.getElementById('inputFile').click()">
-                            <img id="previewImg" class="absolute inset-0 w-full h-full object-cover hidden">
-                            <div id="uploadPrompt" class="text-center group-hover:scale-110 transition">
-                                <i data-lucide="camera" class="w-8 h-8 text-slate-300 mx-auto mb-2"></i>
-                                <span class="text-[10px] font-bold text-slate-400 uppercase">Ketuk untuk Kamera/Galeri</span>
-                            </div>
-                            <input type="file" id="inputFile" accept="image/*" capture="environment" class="hidden" onchange="compressAndPreview(event)">
-                        </div>
-                    </div>
-
-                    <button id="btnSimpan" onclick="simpanData()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-4 rounded-2xl shadow-lg shadow-blue-200 flex justify-center items-center gap-2 mt-4 transition">
-                        <i data-lucide="save" class="w-5 h-5"></i> SIMPAN BARANG
-                    </button>
-                </div>
             </div>
 
             <!-- Etalase Produk -->
@@ -183,6 +143,67 @@
         </div>
 
     </div> <!-- End App Wrapper -->
+
+    <!-- MODAL BOTTOM SHEET: INPUT PRODUK BARU -->
+    <div id="inputModalOverlay" class="hidden fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm justify-center items-end transition-opacity" onclick="if(event.target === this) closeForm()">
+        <div id="inputFormContent" class="bg-white w-full max-w-[520px] p-6 rounded-t-[2.5rem] shadow-2xl transform translate-y-full transition-transform duration-300 max-h-[90vh] overflow-y-auto custom-scrollbar flex flex-col relative pb-safe">
+            
+            <!-- Handle bar (Garis tarik) -->
+            <div class="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-5"></div>
+            
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <h2 class="text-lg font-black text-blue-800 italic uppercase">Input Produk Baru</h2>
+                </div>
+                <button onclick="closeForm()" class="bg-gray-100 p-2 rounded-full text-gray-400 hover:text-red-500 transition-colors">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+            
+            <div class="space-y-4">
+                <!-- Dropdown Nama Pintar (Kustom) -->
+                <div class="relative" id="dropdownContainer">
+                    <label class="block text-[10px] font-black text-gray-400 mb-1 tracking-widest uppercase">Nama Barang dari Master</label>
+                    <div class="relative">
+                        <input type="text" id="inputNama" autocomplete="off" placeholder="Ketik nama produk..." 
+                               class="w-full bg-slate-50 border-none rounded-xl p-4 pr-10 focus:ring-4 focus:ring-blue-100 font-bold uppercase italic text-sm text-slate-700 transition-all outline-none">
+                        <i data-lucide="chevron-down" class="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none"></i>
+                    </div>
+                    <!-- Custom Dropdown List -->
+                    <div id="customDropdown" class="hidden absolute z-[150] w-full mt-2 bg-white border border-gray-100 rounded-xl shadow-2xl max-h-48 overflow-y-auto custom-scrollbar flex flex-col">
+                        <!-- Items via JS -->
+                    </div>
+                </div>
+
+                <div class="flex gap-3">
+                    <div class="w-1/2">
+                        <label class="block text-[10px] font-black text-gray-400 mb-1 tracking-widest uppercase text-center">1 CTN = ? INN</label>
+                        <input type="number" id="inputCtn" placeholder="0" class="w-full bg-slate-50 border-none rounded-xl p-4 focus:ring-4 focus:ring-blue-100 text-center font-black text-lg text-blue-600 outline-none transition-all">
+                    </div>
+                    <div class="w-1/2">
+                        <label class="block text-[10px] font-black text-gray-400 mb-1 tracking-widest uppercase text-center">1 INN = ? PCS</label>
+                        <input type="number" id="inputInn" placeholder="0" class="w-full bg-slate-50 border-none rounded-xl p-4 focus:ring-4 focus:ring-blue-100 text-center font-black text-lg text-emerald-600 outline-none transition-all">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-[10px] font-black text-gray-400 mb-1 tracking-widest uppercase">Foto Aktual Produk</label>
+                    <div class="relative w-full h-36 border-2 border-dashed border-slate-200 rounded-2xl bg-slate-50 flex flex-col items-center justify-center cursor-pointer overflow-hidden group hover:border-blue-300 transition-colors" onclick="document.getElementById('inputFile').click()">
+                        <img id="previewImg" class="absolute inset-0 w-full h-full object-cover hidden">
+                        <div id="uploadPrompt" class="text-center group-hover:scale-110 transition-transform">
+                            <i data-lucide="camera" class="w-8 h-8 text-slate-300 mx-auto mb-2"></i>
+                            <span class="text-[10px] font-bold text-slate-400 uppercase">Ketuk untuk Kamera/Galeri</span>
+                        </div>
+                        <input type="file" id="inputFile" accept="image/*" capture="environment" class="hidden" onchange="compressAndPreview(event)">
+                    </div>
+                </div>
+
+                <button id="btnSimpan" onclick="simpanData()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-4 rounded-2xl shadow-lg shadow-blue-200 flex justify-center items-center gap-2 mt-4 transition active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
+                    <i data-lucide="save" class="w-5 h-5"></i> SIMPAN BARANG
+                </button>
+            </div>
+        </div>
+    </div>
 
     <!-- Modal Custom Login Admin -->
     <div id="loginModal" class="hidden fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 transition-opacity">
@@ -321,7 +342,6 @@
                 masterNames = data.masterSKU ? data.masterSKU.map(m => m.nama) : [];
                 
                 localStorage.setItem('retailKatalogData', JSON.stringify(products));
-                renderDatalist();
                 
                 ind.style.display = "none";
                 filterProducts();
@@ -350,7 +370,6 @@
                 
                 document.getElementById('btnAddSection').classList.add('hidden');
                 document.getElementById('btnLockedSection').classList.remove('hidden');
-                document.getElementById('inputForm').classList.add('hidden');
                 lucide.createIcons();
                 
                 showToast("Berhasil Keluar. Mode Viewer Aktif.");
@@ -421,13 +440,26 @@
             }
         }
 
-        function toggleForm() {
+        // --- SISTEM MODAL BOTTOM SHEET INPUT ---
+        function openForm() {
             if(!isAdmin) return;
-            const form = document.getElementById("inputForm");
-            form.classList.toggle("hidden");
-            if (!form.classList.contains("hidden")) {
-                form.scrollIntoView({ behavior: "smooth", block: "start" });
-            }
+            const modal = document.getElementById("inputModalOverlay");
+            const content = document.getElementById("inputFormContent");
+            modal.classList.remove("hidden");
+            modal.classList.add("flex");
+            setTimeout(() => {
+                content.classList.remove("translate-y-full");
+            }, 10);
+        }
+
+        function closeForm() {
+            const modal = document.getElementById("inputModalOverlay");
+            const content = document.getElementById("inputFormContent");
+            content.classList.add("translate-y-full");
+            setTimeout(() => {
+                modal.classList.add("hidden");
+                modal.classList.remove("flex");
+            }, 300);
         }
 
         // --- SISTEM KATEGORI & FILTER ---
@@ -585,16 +617,45 @@
             lucide.createIcons();
         }
 
-        // --- SISTEM INPUT & KOMPRESI KAMERA ---
-        function renderDatalist() {
-            const dl = document.getElementById("namaList");
-            dl.innerHTML = "";
-            masterNames.forEach(name => {
-                const opt = document.createElement("option");
-                opt.value = name;
-                dl.appendChild(opt);
-            });
+        // --- CUSTOM DROPDOWN LOGIC ---
+        const inputNama = document.getElementById("inputNama");
+        const customDropdown = document.getElementById("customDropdown");
+        const dropdownContainer = document.getElementById("dropdownContainer");
+
+        function renderCustomDropdown(items) {
+            if (items.length === 0) {
+                customDropdown.innerHTML = `<div class="p-4 text-center text-xs font-bold text-gray-400">Produk tidak ditemukan</div>`;
+                return;
+            }
+            customDropdown.innerHTML = items.map(name => {
+                const escapedName = name.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                return `<div class="p-4 border-b border-slate-50 text-xs font-bold text-slate-700 uppercase cursor-pointer hover:bg-blue-50 active:bg-blue-100 transition-colors" onclick="selectProduct('${escapedName}')">${name}</div>`;
+            }).join('');
         }
+
+        inputNama.addEventListener('focus', () => {
+            customDropdown.classList.remove('hidden');
+            renderCustomDropdown(masterNames);
+        });
+
+        inputNama.addEventListener('input', (e) => {
+            const val = e.target.value.toLowerCase();
+            const filtered = masterNames.filter(name => name.toLowerCase().includes(val));
+            renderCustomDropdown(filtered);
+            customDropdown.classList.remove('hidden');
+        });
+
+        window.selectProduct = function(name) {
+            inputNama.value = name;
+            customDropdown.classList.add('hidden');
+        };
+
+        document.addEventListener('click', (e) => {
+            if (dropdownContainer && !dropdownContainer.contains(e.target)) {
+                customDropdown.classList.add('hidden');
+            }
+        });
+        // -----------------------------
 
         function compressAndPreview(event) {
             const file = event.target.files[0];
@@ -660,7 +721,9 @@
                   btn.innerHTML = `<i data-lucide="save" class="w-5 h-5"></i> SIMPAN BARANG`;
                   btn.disabled = false;
                   lucide.createIcons();
-                  loadData();
+                  
+                  closeForm(); // Tutup bottom sheet secara otomatis
+                  loadData(); // Refresh data baru
               }).catch(err => {
                   showToast("Gagal menyimpan. Pastikan sinyal internet stabil.", true);
                   btn.innerHTML = `<i data-lucide="save" class="w-5 h-5"></i> COBA LAGI`;
