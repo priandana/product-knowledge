@@ -12,15 +12,16 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800;900&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Inter', sans-serif; }
-        /* Menyembunyikan scrollbar untuk tampilan lebih bersih */
-        ::-webkit-scrollbar { width: 0px; background: transparent; }
+        ::-webkit-scrollbar { width: 4px; background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .dropdown-scroll::-webkit-scrollbar { width: 6px; }
     </style>
 </head>
 <body class="bg-gray-50 text-slate-900 pb-24">
 
     <!-- GANTI URL INI DENGAN URL WEB APP DARI GOOGLE APPS SCRIPT -->
     <script>
-        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxxf9-JAUcNnju1VJvOjiAOXH_ldWSPSxG5H7USqLUXgKRndtIvRnImHoMjqht2wllGZg/exec"; 
+        const SCRIPT_URL = ""; 
     </script>
 
     <!-- Header Ala GoPay -->
@@ -35,7 +36,7 @@
             </div>
         </div>
 
-        <!-- Search Bar -->
+        <!-- Search Bar Etalase -->
         <div class="relative group">
             <div class="absolute inset-y-0 left-4 flex items-center pointer-events-none">
                 <i data-lucide="search" class="w-[18px] h-[18px] text-gray-400 group-focus-within:text-blue-600 transition-colors"></i>
@@ -43,7 +44,7 @@
             <input 
                 type="text" 
                 id="searchInput"
-                placeholder="Cari PLU atau Nama Barang..."
+                placeholder="Cari PLU atau Nama di Etalase..."
                 class="w-full bg-white py-4 pl-12 pr-4 rounded-2xl shadow-sm focus:outline-none focus:ring-4 focus:ring-blue-300/30 transition-all border-none"
             >
         </div>
@@ -122,78 +123,55 @@
                 <!-- Image Input Section -->
                 <div class="relative group">
                     <div class="w-full h-40 bg-gray-50 rounded-[32px] border-2 border-dashed border-gray-200 flex flex-col items-center justify-center overflow-hidden relative group-hover:border-blue-300 transition-colors">
-                        
                         <div id="uploadPlaceholder" class="flex flex-col items-center text-gray-300">
                             <i data-lucide="camera" class="w-9 h-9 mb-2"></i>
                             <p class="text-[10px] font-bold text-gray-400 uppercase">Ambil Foto / Pilih File</p>
                         </div>
                         <img id="imagePreview" src="" class="hidden w-full h-full object-cover" alt="Preview" />
-                        
-                        <input 
-                            type="file" 
-                            id="fileInput"
-                            accept="image/*" 
-                            capture="environment" 
-                            class="absolute inset-0 opacity-0 cursor-pointer"
-                        />
+                        <input type="file" id="fileInput" accept="image/*" capture="environment" class="absolute inset-0 opacity-0 cursor-pointer" />
                     </div>
-                    <button 
-                        type="button"
-                        id="removeImageBtn"
-                        onclick="removeImage()"
-                        class="hidden absolute -top-2 -right-2 bg-red-500 text-white p-1.5 rounded-full shadow-lg"
-                    >
+                    <button type="button" id="removeImageBtn" onclick="removeImage()" class="hidden absolute -top-2 -right-2 bg-red-500 text-white p-1.5 rounded-full shadow-lg">
                         <i data-lucide="x" class="w-4 h-4"></i>
                     </button>
                 </div>
 
-                <!-- Dropdown Barang -->
-                <div class="space-y-1 relative">
-                    <label class="text-[10px] font-black text-slate-400 uppercase ml-2 tracking-widest">Nama Barang</label>
+                <!-- Searchable Dropdown Barang -->
+                <div class="space-y-1 relative" id="dropdownContainer">
+                    <label class="text-[10px] font-black text-slate-400 uppercase ml-2 tracking-widest">Ketik & Pilih Nama Barang</label>
                     <div class="relative">
-                        <select 
-                            id="namaSelect"
-                            required 
-                            class="w-full bg-slate-50 border-none p-4 pr-10 rounded-2xl focus:ring-4 focus:ring-blue-100 transition-all font-bold uppercase italic appearance-none"
+                        <input 
+                            type="text" 
+                            id="searchableNameInput" 
+                            autocomplete="off"
+                            placeholder="Ketik nama produk..." 
+                            class="w-full bg-slate-50 border-none p-4 pr-10 rounded-2xl focus:ring-4 focus:ring-blue-100 transition-all font-bold uppercase italic"
                         >
-                            <option value="" disabled selected>-- Pilih Produk dari Master --</option>
-                            <!-- Options akan diisi lewat JS -->
-                        </select>
                         <i data-lucide="chevron-down" class="w-5 h-5 absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+                    </div>
+                    <!-- Pop-up List Options -->
+                    <div id="dropdownList" class="hidden absolute z-50 w-full bg-white border border-gray-100 rounded-2xl mt-2 max-h-48 overflow-y-auto shadow-2xl dropdown-scroll">
+                        <!-- List dari JS -->
                     </div>
                 </div>
 
                 <!-- Display PLU -->
                 <div class="space-y-1">
                     <label class="text-[10px] font-black text-slate-400 uppercase ml-2 tracking-widest">PLU (Otomatis)</label>
-                    <input 
-                        id="pluInput"
-                        disabled 
-                        placeholder="Terisi Otomatis" 
-                        class="w-full bg-blue-50 border-none p-3 rounded-2xl text-blue-600 font-bold placeholder-blue-300"
-                    />
+                    <input id="pluInput" disabled placeholder="Pilih produk dulu..." class="w-full bg-blue-50 border-none p-3 rounded-2xl text-blue-600 font-bold placeholder-blue-300" />
                 </div>
 
-                <div class="grid grid-cols-3 gap-3">
+                <div class="grid grid-cols-2 gap-3">
                     <div class="space-y-1">
-                        <label class="text-[10px] font-black text-slate-400 uppercase text-center block tracking-widest">Isi Ctn</label>
-                        <input type="number" id="ctnInput" placeholder="0" class="w-full bg-slate-50 border-none p-4 rounded-2xl text-center focus:ring-4 focus:ring-blue-100 font-bold">
+                        <label class="text-[10px] font-black text-slate-400 uppercase text-center block tracking-widest">Inner / Ctn</label>
+                        <input type="number" id="ctnInput" placeholder="1 Ctn = ? Inn" class="w-full bg-slate-50 border-none p-4 rounded-2xl text-center focus:ring-4 focus:ring-blue-100 font-bold text-sm">
                     </div>
                     <div class="space-y-1">
-                        <label class="text-[10px] font-black text-slate-400 uppercase text-center block tracking-widest">Isi Inn</label>
-                        <input type="number" id="innInput" placeholder="0" class="w-full bg-slate-50 border-none p-4 rounded-2xl text-center focus:ring-4 focus:ring-blue-100 font-bold">
-                    </div>
-                    <div class="space-y-1">
-                        <label class="text-[10px] font-black text-slate-400 uppercase text-center block tracking-widest">Pcs</label>
-                        <input type="number" id="pcsInput" placeholder="1" value="1" class="w-full bg-slate-50 border-none p-4 rounded-2xl text-center focus:ring-4 focus:ring-blue-100 font-bold">
+                        <label class="text-[10px] font-black text-slate-400 uppercase text-center block tracking-widest">Pcs / Inner</label>
+                        <input type="number" id="innInput" placeholder="1 Inn = ? Pcs" class="w-full bg-slate-50 border-none p-4 rounded-2xl text-center focus:ring-4 focus:ring-blue-100 font-bold text-sm">
                     </div>
                 </div>
 
-                <button 
-                    type="submit" 
-                    id="submitBtn"
-                    class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-5 rounded-[24px] shadow-xl shadow-blue-200 transition-all active:scale-95 flex items-center justify-center gap-3 mt-4"
-                >
+                <button type="submit" id="submitBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-5 rounded-[24px] shadow-xl shadow-blue-200 transition-all active:scale-95 flex items-center justify-center gap-3 mt-4 opacity-50 cursor-not-allowed" disabled>
                     <div id="btnIcon"><i data-lucide="package" class="w-5 h-5"></i></div>
                     <span id="btnText" class="tracking-widest italic">SIMPAN BARANG</span>
                 </button>
@@ -209,6 +187,7 @@
         let productsData = [];
         let masterSKUData = [];
         let base64Image = "";
+        let selectedProductData = null; // Menyimpan data produk yg dipilih
 
         // Elements
         const loadingSpinner = document.getElementById('loadingSpinner');
@@ -230,13 +209,10 @@
                 masterSKUData = data.masterSKU || [];
                 
                 document.getElementById('masterCount').innerText = masterSKUData.length;
-                
-                renderDropdown();
                 renderGrid(productsData);
             } catch (error) {
                 console.error("Gagal load data:", error);
             } finally {
-                loadingSpinner.classList.remove('hidden');
                 loadingSpinner.classList.add('hidden');
             }
         }
@@ -253,44 +229,37 @@
             
             emptyState.classList.add('hidden');
             productGrid.innerHTML = dataToRender.map(p => `
-                <div class="bg-white rounded-[32px] overflow-hidden shadow-sm border border-gray-100 hover:shadow-lg transition-all group active:scale-95 duration-200">
-                    <div class="relative h-40 bg-gray-50 cursor-zoom-in" onclick="openZoom('${p.foto || ''}')">
+                <div class="bg-white rounded-[32px] overflow-hidden shadow-sm border border-gray-100 hover:shadow-lg transition-all group active:scale-95 duration-200 flex flex-col">
+                    <div class="relative h-40 bg-gray-50 cursor-zoom-in flex-shrink-0" onclick="openZoom('${p.foto || ''}')">
                         ${p.foto ? `<img src="${p.foto}" alt="${p.nama}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />` 
                                 : `<div class="w-full h-full flex items-center justify-center text-gray-200"><i data-lucide="image" class="w-8 h-8"></i></div>`}
                         <div class="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
                             <i data-lucide="zoom-in" class="text-white opacity-0 group-hover:opacity-100 transition-opacity w-6 h-6"></i>
                         </div>
-                        <div class="absolute top-3 left-3 bg-white/90 backdrop-blur-md px-2 py-1 rounded-lg">
+                        <div class="absolute top-3 left-3 bg-white/90 backdrop-blur-md px-2 py-1 rounded-lg shadow-sm">
                             <span class="text-[8px] font-black text-blue-700 tracking-tighter">PLU ${p.plu || '-'}</span>
                         </div>
                     </div>
-                    <div class="p-3">
-                        <h3 class="font-extrabold text-slate-800 text-[11px] leading-tight mb-3 h-8 overflow-hidden line-clamp-2 uppercase italic">${p.nama}</h3>
-                        <div class="flex justify-between items-center bg-slate-50 rounded-2xl px-2 py-2">
+                    <div class="p-3 flex-grow flex flex-col justify-between">
+                        <h3 class="font-extrabold text-slate-800 text-[11px] leading-tight mb-3 uppercase italic line-clamp-2">${p.nama}</h3>
+                        <div class="flex justify-between items-center bg-slate-50 rounded-2xl p-2 border border-slate-100">
                             <div class="text-center flex-1">
-                                <p class="text-[7px] text-gray-400 font-bold uppercase">Ctn</p>
-                                <p class="text-[10px] font-black text-blue-600">${p.ctn || '-'}</p>
+                                <p class="text-[7px] text-gray-400 font-bold uppercase tracking-widest mb-0.5">1 CTN=</p>
+                                <p class="text-[10px] font-black text-blue-600">${p.ctn || '0'} INN</p>
                             </div>
-                            <div class="w-[1px] h-4 bg-gray-200"></div>
+                            <div class="w-[1px] h-6 bg-gray-200 mx-1"></div>
                             <div class="text-center flex-1">
-                                <p class="text-[7px] text-gray-400 font-bold uppercase">Inn</p>
-                                <p class="text-[10px] font-black text-emerald-500">${p.inn || '-'}</p>
-                            </div>
-                            <div class="w-[1px] h-4 bg-gray-200"></div>
-                            <div class="text-center flex-1">
-                                <p class="text-[7px] text-gray-400 font-bold uppercase">Pcs</p>
-                                <p class="text-[10px] font-black text-rose-500">${p.pcs || '1'}</p>
+                                <p class="text-[7px] text-gray-400 font-bold uppercase tracking-widest mb-0.5">1 INN=</p>
+                                <p class="text-[10px] font-black text-emerald-600">${p.inn || '0'} PCS</p>
                             </div>
                         </div>
                     </div>
                 </div>
             `).join('');
-            
-            // Re-init icons for newly added HTML
             lucide.createIcons();
         }
 
-        // Search Function
+        // Search Etalase
         searchInput.addEventListener('input', (e) => {
             const val = e.target.value.toLowerCase();
             const filtered = productsData.filter(p => 
@@ -300,21 +269,62 @@
             renderGrid(filtered);
         });
 
-        // Render Master SKU Dropdown
-        function renderDropdown() {
-            const select = document.getElementById('namaSelect');
-            // Keep the first disabled option
-            select.innerHTML = '<option value="" disabled selected>-- Pilih Produk dari Master --</option>' + 
-                masterSKUData.map(sku => `<option value="${sku.nama}">${sku.nama}</option>`).join('');
+        // ----------------------------------------------------
+        // LOGIKA SEARCHABLE DROPDOWN
+        // ----------------------------------------------------
+        const searchableNameInput = document.getElementById('searchableNameInput');
+        const dropdownList = document.getElementById('dropdownList');
+        const pluInput = document.getElementById('pluInput');
+        const dropdownContainer = document.getElementById('dropdownContainer');
+
+        function renderDropdownList(items) {
+            if (items.length === 0) {
+                dropdownList.innerHTML = `<div class="p-4 text-center text-xs text-gray-400 font-bold">Produk tidak ditemukan</div>`;
+                return;
+            }
+            dropdownList.innerHTML = items.map(sku => {
+                const escapedName = sku.nama.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                return `<div class="p-3 hover:bg-blue-50 cursor-pointer text-xs font-bold text-slate-700 border-b border-gray-50 uppercase" onclick="selectProduct('${escapedName}')">${sku.nama}</div>`;
+            }).join('');
         }
 
-        // On Dropdown Change (Auto fill PLU)
-        document.getElementById('namaSelect').addEventListener('change', (e) => {
-            const selectedName = e.target.value;
-            const item = masterSKUData.find(m => m.nama === selectedName);
-            document.getElementById('pluInput').value = item ? item.plu : '';
+        // Tampilkan list saat diklik
+        searchableNameInput.addEventListener('focus', () => {
+            dropdownList.classList.remove('hidden');
+            renderDropdownList(masterSKUData);
+        });
+
+        // Filter list saat diketik
+        searchableNameInput.addEventListener('input', (e) => {
+            const val = e.target.value.toLowerCase();
+            const filtered = masterSKUData.filter(sku => sku.nama.toLowerCase().includes(val));
+            renderDropdownList(filtered);
+            dropdownList.classList.remove('hidden');
+
+            // Reset PLU jika ngetik ulang manual
+            selectedProductData = null;
+            pluInput.value = '';
             checkSubmitButton();
         });
+
+        // Fungsi saat list barang di-klik
+        window.selectProduct = function(nama) {
+            searchableNameInput.value = nama;
+            dropdownList.classList.add('hidden');
+            
+            selectedProductData = masterSKUData.find(m => m.nama === nama);
+            pluInput.value = selectedProductData ? selectedProductData.plu : '';
+            checkSubmitButton();
+        };
+
+        // Sembunyikan list kalau ngeklik di luar area dropdown
+        document.addEventListener('click', (e) => {
+            if (!dropdownContainer.contains(e.target)) {
+                dropdownList.classList.add('hidden');
+            }
+        });
+        // ----------------------------------------------------
+
 
         // Image Upload Logic
         const fileInput = document.getElementById('fileInput');
@@ -348,65 +358,10 @@
             checkSubmitButton();
         }
 
-        // Submit Form
-        document.getElementById('productForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            if (!SCRIPT_URL) {
-                alert("URL Script Google belum dimasukkan!"); return;
-            }
-
-            const btnText = document.getElementById('btnText');
-            const btnIcon = document.getElementById('btnIcon');
-            const submitBtn = document.getElementById('submitBtn');
-
-            // Set Loading UI
-            submitBtn.disabled = true;
-            submitBtn.classList.add('bg-slate-400');
-            submitBtn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
-            btnText.innerText = "MENYIMPAN...";
-            btnIcon.innerHTML = `<div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>`;
-
-            const payload = {
-                nama: document.getElementById('namaSelect').value,
-                foto: base64Image,
-                ctn: document.getElementById('ctnInput').value,
-                inn: document.getElementById('innInput').value,
-                pcs: document.getElementById('pcsInput').value
-            };
-
-            try {
-                await fetch(SCRIPT_URL, {
-                    method: 'POST',
-                    body: JSON.stringify(payload)
-                });
-                
-                // Success - Reset Form
-                closeModal();
-                document.getElementById('productForm').reset();
-                removeImage();
-                document.getElementById('pluInput').value = '';
-                
-                // Refresh Data
-                loadData();
-            } catch (error) {
-                alert("Terjadi kesalahan saat menyimpan data.");
-            } finally {
-                // Reset Button UI
-                submitBtn.disabled = false;
-                submitBtn.classList.remove('bg-slate-400');
-                submitBtn.classList.add('bg-blue-600', 'hover:bg-blue-700');
-                btnText.innerText = "SIMPAN BARANG";
-                btnIcon.innerHTML = `<i data-lucide="package" class="w-5 h-5"></i>`;
-                lucide.createIcons();
-            }
-        });
-
+        // Tombol Simpan
         function checkSubmitButton() {
-            const isNameSelected = document.getElementById('namaSelect').value !== "";
-            const hasImage = base64Image !== "";
             const submitBtn = document.getElementById('submitBtn');
-            
-            if (isNameSelected && hasImage) {
+            if (selectedProductData && base64Image !== "") {
                 submitBtn.disabled = false;
                 submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
             } else {
@@ -415,16 +370,59 @@
             }
         }
 
+        document.getElementById('productForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!SCRIPT_URL) { alert("URL Script Google belum dimasukkan!"); return; }
+
+            const btnText = document.getElementById('btnText');
+            const btnIcon = document.getElementById('btnIcon');
+            const submitBtn = document.getElementById('submitBtn');
+
+            submitBtn.disabled = true;
+            submitBtn.classList.add('bg-slate-400');
+            submitBtn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+            btnText.innerText = "MENYIMPAN...";
+            btnIcon.innerHTML = `<div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>`;
+
+            // Data yang dikirim ke Google Sheets (Backend Apps Script)
+            const payload = {
+                nama: selectedProductData.nama, // Kirim nama yang valid dari master
+                foto: base64Image,
+                ctn: document.getElementById('ctnInput').value || '0', // Nilai Inner / Ctn
+                inn: document.getElementById('innInput').value || '0', // Nilai Pcs / Inner
+                pcs: '1' // Default satuan terkecil
+            };
+
+            try {
+                await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(payload) });
+                
+                closeModal();
+                document.getElementById('productForm').reset();
+                searchableNameInput.value = '';
+                selectedProductData = null;
+                pluInput.value = '';
+                removeImage();
+                
+                loadData();
+            } catch (error) {
+                alert("Terjadi kesalahan saat menyimpan data.");
+            } finally {
+                submitBtn.classList.remove('bg-slate-400');
+                submitBtn.classList.add('bg-blue-600', 'hover:bg-blue-700');
+                btnText.innerText = "SIMPAN BARANG";
+                btnIcon.innerHTML = `<i data-lucide="package" class="w-5 h-5"></i>`;
+                lucide.createIcons();
+                checkSubmitButton();
+            }
+        });
+
         // Modal Controls
         function openModal() {
             const modal = document.getElementById('inputModal');
             const content = document.getElementById('modalContent');
             modal.classList.remove('hidden');
             modal.classList.add('flex');
-            // Small delay for animation
-            setTimeout(() => {
-                content.classList.remove('translate-y-full');
-            }, 10);
+            setTimeout(() => content.classList.remove('translate-y-full'), 10);
             checkSubmitButton();
         }
 
@@ -459,7 +457,6 @@
             }, 300);
         }
 
-        // Initialize App
         loadData();
 
     </script>
