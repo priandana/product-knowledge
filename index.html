@@ -36,17 +36,25 @@
 </head>
 <body class="text-slate-800 flex justify-center">
 
+    <!-- Toast Notification Overlay -->
+    <div id="toastNotification" class="fixed top-10 left-1/2 transform -translate-x-1/2 z-[300] transition-all duration-300 opacity-0 -translate-y-full pointer-events-none w-full max-w-[90%] sm:max-w-md flex justify-center">
+        <div id="toastContent" class="bg-gray-800 text-white px-6 py-3 rounded-full shadow-2xl font-bold text-xs flex items-center gap-2">
+            <i data-lucide="info" class="w-4 h-4"></i>
+            <span id="toastText">Pesan Notifikasi</span>
+        </div>
+    </div>
+
     <!-- App Wrapper -->
     <div class="app-container w-full pb-28">
 
-        <!-- Header & Search (Z-index disesuaikan agar tidak menutupi kartu) -->
+        <!-- Header & Search -->
         <div class="glass-header text-white pt-8 pb-16 px-5 rounded-b-[2.5rem] shadow-lg relative z-10">
             <div class="w-full flex justify-between items-center mb-6">
                 <div>
                     <h1 class="text-3xl font-extrabold tracking-tight">PRODUCT<span class="text-blue-300">KNOWLEDGE</span></h1>
                     <p class="text-[10px] text-blue-200 font-bold tracking-wider uppercase mt-1">Retail & Warehouse Guide</p>
                 </div>
-                <!-- Ikon Profil/Logo (Tombol admin & kuis dipindah ke bawah) -->
+                <!-- Ikon Profil/Logo -->
                 <div class="bg-white/20 p-3 rounded-full shadow border border-white/30">
                     <i data-lucide="store" class="w-6 h-6"></i>
                 </div>
@@ -67,7 +75,7 @@
             </div>
         </div>
 
-        <!-- Main Content (Z-index 20 agar kartu putih menindih header biru dengan rapi) -->
+        <!-- Main Content -->
         <div class="w-full px-5 -mt-8 relative z-20">
             
             <!-- Stats & Input Panel -->
@@ -164,7 +172,7 @@
                 </button>
             </div>
 
-            <button onclick="alert('Pusat Notifikasi sedang dalam pengembangan.')" class="flex flex-col items-center text-gray-400 hover:text-blue-500 transition mb-1 w-12">
+            <button onclick="showToast('Pusat Notifikasi sedang dalam pengembangan.')" class="flex flex-col items-center text-gray-400 hover:text-blue-500 transition mb-1 w-12">
                 <i data-lucide="bell" class="w-6 h-6 mb-1"></i>
                 <span class="text-[9px] font-black">Notif</span>
             </button>
@@ -175,6 +183,29 @@
         </div>
 
     </div> <!-- End App Wrapper -->
+
+    <!-- Modal Custom Login Admin -->
+    <div id="loginModal" class="hidden fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 transition-opacity">
+        <div class="bg-white w-full max-w-sm rounded-[2rem] p-6 shadow-2xl transform transition-transform scale-95" id="loginModalContent">
+            <div class="text-center mb-6">
+                <div class="bg-blue-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3 text-blue-600 border border-blue-100">
+                    <i data-lucide="lock-keyhole" class="w-8 h-8"></i>
+                </div>
+                <h2 class="text-xl font-black text-slate-800">Akses Admin</h2>
+                <p class="text-xs text-gray-500 mt-1">Masukkan kata sandi untuk mode editor</p>
+            </div>
+            
+            <div class="space-y-4">
+                <input type="password" id="adminPasswordInput" placeholder="Kata Sandi..." 
+                       class="w-full bg-slate-50 border-2 border-slate-100 rounded-xl p-4 text-center font-black tracking-widest focus:ring-4 focus:ring-blue-100 focus:border-blue-400 transition-all outline-none">
+                
+                <div class="flex gap-3 mt-6">
+                    <button onclick="closeLoginModal()" class="w-1/2 py-3 rounded-xl font-bold text-gray-500 bg-gray-100 hover:bg-gray-200 transition active:scale-95">Batal</button>
+                    <button onclick="submitLogin()" class="w-1/2 py-3 rounded-xl font-bold text-white bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-200 transition active:scale-95">Masuk</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Mode Ujian / Kuis Overlay -->
     <div id="quizModal" class="hidden fixed inset-0 z-50 quiz-overlay bg-black/60 flex items-center justify-center p-4">
@@ -215,7 +246,7 @@
     </div>
 
     <!-- Zoom Modal -->
-    <div id="zoomModal" class="hidden fixed inset-0 bg-black/90 z-50 flex flex-col items-center justify-center p-4" onclick="closeZoom()">
+    <div id="zoomModal" class="hidden fixed inset-0 bg-black/90 z-[400] flex flex-col items-center justify-center p-4" onclick="closeZoom()">
         <button class="absolute top-6 right-6 bg-white/20 rounded-full p-2 text-white hover:bg-white/40"><i data-lucide="x"></i></button>
         <div id="zoomLoader" class="loader absolute"></div>
         <img id="zoomedImage" class="max-w-full max-h-[80vh] rounded-xl object-contain hidden" onload="document.getElementById('zoomLoader').style.display='none'; this.classList.remove('hidden')">
@@ -236,8 +267,39 @@
         let isAdmin = false;
         let currentCategory = "All";
         let currentQuizProduct = null;
+        let toastTimeout = null;
 
         const base64Data = { string: "" };
+
+        // --- CUSTOM TOAST NOTIFICATION ---
+        function showToast(message, isError = false, isSuccess = false) {
+            const toast = document.getElementById('toastNotification');
+            const text = document.getElementById('toastText');
+            const content = document.getElementById('toastContent');
+            
+            text.innerHTML = message;
+            
+            // Reset classes
+            content.classList.remove('bg-gray-800', 'bg-red-600', 'bg-green-600');
+            
+            if (isError) {
+                content.classList.add('bg-red-600');
+            } else if (isSuccess) {
+                content.classList.add('bg-green-600');
+            } else {
+                content.classList.add('bg-gray-800');
+            }
+
+            toast.classList.remove('opacity-0', '-translate-y-full');
+            toast.classList.add('opacity-100', 'translate-y-0');
+            
+            if (toastTimeout) clearTimeout(toastTimeout);
+            
+            toastTimeout = setTimeout(() => {
+                toast.classList.remove('opacity-100', 'translate-y-0');
+                toast.classList.add('opacity-0', '-translate-y-full');
+            }, 3000);
+        }
 
         async function loadData() {
             const ind = document.getElementById("statusIndicator");
@@ -279,6 +341,7 @@
         // --- SISTEM ADMIN & LOGIN ---
         function loginAdmin() {
             if (isAdmin) {
+                // Logout Logic
                 isAdmin = false;
                 document.getElementById('adminIconBottom').setAttribute('data-lucide', 'user');
                 document.getElementById('adminTextBottom').innerText = "Admin";
@@ -289,11 +352,50 @@
                 document.getElementById('btnLockedSection').classList.remove('hidden');
                 document.getElementById('inputForm').classList.add('hidden');
                 lucide.createIcons();
-                alert("Mode Viewer Aktif. Anda keluar dari sesi Admin.");
+                
+                showToast("Berhasil Keluar. Mode Viewer Aktif.");
                 return;
             }
 
-            const pass = prompt("Masukkan Password Admin:");
+            // Buka Modal Kustom Login
+            openLoginModal();
+        }
+
+        function openLoginModal() {
+            const modal = document.getElementById('loginModal');
+            const content = document.getElementById('loginModalContent');
+            const input = document.getElementById('adminPasswordInput');
+            
+            input.value = ""; // Bersihkan kolom sebelumnya
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            
+            setTimeout(() => {
+                content.classList.remove('scale-95');
+                input.focus();
+            }, 10);
+            
+            // Tangkap tombol Enter
+            input.onkeypress = function(e) {
+                if (e.key === 'Enter') submitLogin();
+            };
+        }
+
+        function closeLoginModal() {
+            const modal = document.getElementById('loginModal');
+            const content = document.getElementById('loginModalContent');
+            
+            content.classList.add('scale-95');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }, 200);
+        }
+
+        function submitLogin() {
+            const passInput = document.getElementById('adminPasswordInput');
+            const pass = passInput.value;
+            
             if (pass === "admin123") { // <-- GANTI PASSWORD DI SINI
                 isAdmin = true;
                 
@@ -306,9 +408,16 @@
                 document.getElementById('btnLockedSection').classList.add('hidden');
                 document.getElementById('btnAddSection').classList.remove('hidden');
                 lucide.createIcons();
-                alert("Berhasil! Anda sekarang dalam Mode Editor.");
-            } else if (pass !== null) {
-                alert("Password Salah!");
+                
+                closeLoginModal();
+                showToast("Akses Diterima! Mode Editor Aktif.", false, true);
+            } else {
+                // Efek Error
+                passInput.classList.add('border-red-500', 'bg-red-50', 'text-red-600');
+                showToast("Kata Sandi Salah!", true);
+                setTimeout(() => {
+                    passInput.classList.remove('border-red-500', 'bg-red-50', 'text-red-600');
+                }, 1000);
             }
         }
 
@@ -425,7 +534,7 @@
             const modal = document.getElementById("quizModal");
             if (modal.classList.contains("hidden")) {
                 if (products.length === 0) {
-                    alert("Tunggu data selesai dimuat dulu ya!");
+                    showToast("Tunggu data selesai dimuat dulu ya!", true);
                     return;
                 }
                 modal.classList.remove("hidden");
@@ -438,7 +547,7 @@
         function nextQuizQuestion() {
             const validProducts = products.filter(p => p.foto && p.ctn);
             if(validProducts.length === 0) {
-                alert("Belum cukup data produk untuk kuis.");
+                showToast("Belum cukup data produk berfoto untuk kuis.", true);
                 toggleQuizMode();
                 return;
             }
@@ -520,7 +629,7 @@
             const inn = document.getElementById("inputInn").value;
 
             if (!nama || !ctn || !inn) {
-                alert("Pilih Nama, isi CTN dan INN!");
+                showToast("Silakan isi Nama Barang, CTN dan INN terlebih dahulu!", true);
                 return;
             }
 
@@ -541,7 +650,7 @@
                 body: JSON.stringify(payload)
             }).then(res => res.json())
               .then(data => {
-                  alert("Berhasil disimpan!");
+                  showToast("Data Berhasil Disimpan ke Server!", false, true);
                   document.getElementById("inputNama").value = "";
                   document.getElementById("inputCtn").value = "";
                   document.getElementById("inputInn").value = "";
@@ -553,7 +662,7 @@
                   lucide.createIcons();
                   loadData();
               }).catch(err => {
-                  alert("Gagal menyimpan. Pastikan sinyal stabil.");
+                  showToast("Gagal menyimpan. Pastikan sinyal internet stabil.", true);
                   btn.innerHTML = `<i data-lucide="save" class="w-5 h-5"></i> COBA LAGI`;
                   btn.disabled = false;
                   lucide.createIcons();
